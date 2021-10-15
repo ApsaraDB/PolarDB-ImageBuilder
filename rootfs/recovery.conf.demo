@@ -1,0 +1,5 @@
+
+recovery_target_timeline='latest'
+primary_slot_name='replica1'
+primary_conninfo='host=1.1.1.1 port=5558 user=postgres password=pgsql application_name=replica1'
+

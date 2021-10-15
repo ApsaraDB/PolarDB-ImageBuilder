@@ -1,0 +1,6 @@
+.idea
+.vscode
+.python-version
+polardb_pg-*
+*.pyc
+venv*

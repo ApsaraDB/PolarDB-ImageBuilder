@@ -1,0 +1,49 @@
+#
+# Copyright (c) 2021, Alibaba Group Holding Limited
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+
+# build image结果输出文件
+result: image.result
+
+# 将会安装current分支的包
+pfsd_rpm: t-pfsd-opensource-1.2.41-1.el7.x86_64.rpm 
+polardb_rpm: PolarDB-0200-2.0.2-20210929141811.el7.x86_64.rpm
+
+images:
+  # PG images
+  - id: polardb_pg_engine_test
+    type: engine
+    build_image_name: polardb_pg/polardb_pg_opensource_engine_test
+    build_image_dockerfile: ./docker/Dockerfile.pg.engine.test
+    engine_repo: https://github.com/ApsaraDB/PolarDB-for-PostgreSQL.git
+    engine_branch: main
+    engine_config_template: src/backend/utils/misc/postgresql.conf.sample
+    push: false
+    enable: false
+
+  - id: polardb_pg_engine_release
+    type: engine
+    build_image_name: polardb_pg/polardb_pg_opensource_engine_release
+    build_image_dockerfile: ./docker/Dockerfile.pg.engine.release
+    engine_repo: https://github.com/ApsaraDB/PolarDB-for-PostgreSQL.git
+    engine_branch: main
+    engine_config_template: src/backend/utils/misc/postgresql.conf.sample
+    push: false
+    enable: true
+
+  - id: polardb_pg_manager
+    type: manager
+    build_image_name: polardb_pg/polardb_pg_opensource_manager
+    build_image_dockerfile: ./docker/Dockerfile.manager
+    engine_image_id: polardb_pg_engine_release
+    push: false
+    enable: true

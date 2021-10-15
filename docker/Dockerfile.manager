@@ -1,0 +1,49 @@
+#
+# Copyright (c) 2021, Alibaba Group Holding Limited
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+
+ARG ENGINE_IMAGE_FULL_NAME=
+
+FROM $ENGINE_IMAGE_FULL_NAME
+
+ARG CodeSource=
+ARG CodeBranch=
+ARG CodeVersion=
+ARG BuildBy=
+LABEL maintainer="polardb-pg@alibaba-inc.com"
+
+ENV PYTHONPATH /docker_script
+ENTRYPOINT ["python", "/docker_script/init_and_pause.py"]
+
+COPY rootfs/bin/sql_file_format /usr/bin/
+
+RUN yum install -y yum-plugin-ovl
+
+RUN touch /var/lib/yum && \
+    yum install -y epel-release && \
+    yum install -y \
+    gdb \
+	perf \
+    python-psycopg2 \
+    shadow-utils \
+    util-linux \
+    python-pip \
+    python-requests && \
+    yum clean --enablerepo=* all && touch /var/lib/rpm/*
+
+RUN pip install -i https://mirrors.aliyun.com/pypi/simple  crcmod
+RUN pip install -i https://mirrors.aliyun.com/pypi/simple "sqlparse==0.3.1" 
+RUN rm -f /etc/localtime && ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+RUN chmod -R +x /docker_script && sed -i "s/^\*\(.*\)/#\1/" /etc/security/limits.conf
+
+LABEL PERF_BUSINESS_TYPE='' CodeSource=$CodeSource CodeBranch=$CodeBranch CodeVersion=$CodeVersion BuildBy=$BuildBy

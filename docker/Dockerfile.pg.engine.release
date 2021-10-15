@@ -1,0 +1,100 @@
+#
+# Copyright (c) 2021, Alibaba Group Holding Limited
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#
+
+# compile
+FROM polardb_pg/polardb_pg_base:1.0-SNAPSHOT AS builder
+
+ENV POLAR_BUILD_DIR=/home/postgres/polardb_pg
+ARG POLAR_SOURCE_DIR=polardb_pg
+
+USER root
+
+ARG BUILD_ARGS="--disable-rpath \
+    --with-segsize=128 \
+    --with-pfsd "
+
+ARG PFSRPM=
+
+#RUN yum install -y $PFSRPM && \
+   #yum clean all
+
+COPY rootfs/t-pfsd-opensource-1.2.41-1.el7.x86_64.rpm /tmp/
+RUN rpm -ivh /tmp/t-pfsd-opensource-1.2.41-1.el7.x86_64.rpm
+
+COPY ${POLAR_SOURCE_DIR} ${POLAR_BUILD_DIR}
+
+RUN cd ${POLAR_BUILD_DIR} && \
+    exportCFLAGS="-ggdb -O0 -g3 -fno-omit-frame-pointer  -g -I/usr/include/et -DLINUX_OOM_SCORE_ADJ=0 -DLINUX_OOM_ADJ=0 -DMAP_HUGETLB=0x40000 -pipe -Wall -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic" && \
+    export CXXFLAGS="-ggdb -O0 -g3 -fno-omit-frame-pointer  -g -I/usr/include/et  -pipe -Wall -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic" && \
+    export LDFLAGS="-Wl,-rpath,'\$\$ORIGIN/../lib'" && \
+    ./configure --prefix=${POLAR_BUILD_DIR}/cache --with-pgport=5432 ${BUILD_ARGS} && \
+    if [[ -d ${POLAR_BUILD_DIR}/cache/bin ]]; then make clean; fi && \
+    make -j 64 install && \
+    make -j 64 -C contrib install && \
+    make -j 64 -C external install
+
+
+# build real image
+FROM polardb_pg/polardb_pg_base:1.0-SNAPSHOT
+
+LABEL maintainer="polardb@alibaba-inc.com"
+
+ARG CodeSource=
+ARG CodeBranch=
+ARG CodeVersion=
+ARG PolarSource=
+ARG PolarBranch=
+ARG PolarVersion=
+ARG BuildBy=
+ARG PFSRPM=
+
+USER root
+
+ENV INITDB_USER=postgres
+ENV PYTHONPATH=/docker_script
+ENV POLARDB_BASE_DIR=/u01/polardb_pg
+ENV PATH=${PATH}:${POLARDB_BASE_DIR}/bin
+
+ENTRYPOINT ["python", "/docker_script/pg_tasks/supervisor.py"]
+CMD ["su", "-l", "${INITDB_USER}", "-c", "\"/u01/polardb_pg/bin/postgres -D /data\""]
+
+COPY --from=builder /home/postgres/polardb_pg/cache/ ${POLARDB_BASE_DIR}
+
+COPY rootfs/polardb_docker_script /docker_script
+COPY rootfs/postgresql.conf.sample.polardb_pg /postgresql.conf.demo
+COPY rootfs/recovery.conf.demo /
+COPY rootfs/t-pfsd-opensource-1.2.41-1.el7.x86_64.rpm /tmp/
+COPY docker/init.sh /init.sh
+COPY rootfs/bin/shutdown_cleanup.sh /shutdown_cleanup.sh
+
+RUN chmod -R +x /docker_script && \
+    chmod 666 /postgresql.conf.demo && cat /init.sh >> /etc/bashrc && \
+    #yum install -y $PFSRPM && \
+    yum clean all
+
+RUN rpm -ivh /tmp/t-pfsd-opensource-1.2.41-1.el7.x86_64.rpm
+
+RUN touch /var/lib/yum && \
+    yum install -y epel-release && \
+    yum install -y \
+    gdb \
+	perf \
+    python-psycopg2 \
+    shadow-utils \
+    util-linux \
+    python-pip \
+    python-requests && \
+    yum clean --enablerepo=* all && touch /var/lib/rpm/*
+
+LABEL CodeSource=$CodeSource CodeBranch=$CodeBranch CodeVersion=$CodeVersion \
+    PolarSource=$PolarSource PolarBranch=$PolarBranch PolarVersion=$PolarVersion BuildBy=$BuildBy
