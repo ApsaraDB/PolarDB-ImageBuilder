@@ -24,7 +24,7 @@ RUN rpm -ivh /tmp/t-pfsd-opensource-1.2.41-1.el7.x86_64.rpm
 COPY ${POLAR_SOURCE_DIR} ${POLAR_BUILD_DIR}
 
 RUN cd ${POLAR_BUILD_DIR} && \
-    exportCFLAGS="-ggdb -O0 -g3 -fno-omit-frame-pointer  -g -I/usr/include/et -DLINUX_OOM_SCORE_ADJ=0 -DLINUX_OOM_ADJ=0 -DMAP_HUGETLB=0x40000 -pipe -Wall -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic" && \
+    export CFLAGS="-ggdb -O0 -g3 -fno-omit-frame-pointer  -g -I/usr/include/et -DLINUX_OOM_SCORE_ADJ=0 -DLINUX_OOM_ADJ=0 -DMAP_HUGETLB=0x40000 -pipe -Wall -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic" && \
     export CXXFLAGS="-ggdb -O0 -g3 -fno-omit-frame-pointer  -g -I/usr/include/et  -pipe -Wall -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic" && \
     export LDFLAGS="-Wl,-rpath,'\$\$ORIGIN/../lib'" && \
     ./configure --prefix=${POLAR_BUILD_DIR}/cache --with-pgport=5432 ${BUILD_ARGS} && \
