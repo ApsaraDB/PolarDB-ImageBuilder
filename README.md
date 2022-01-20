@@ -89,11 +89,9 @@ The process and principles are as follows:
 
 # Build Image Locally
 ## Install Depedency
-Run the following commands to install python:
 
-```bash
-sudo pip install -r requirements.txt
-```
+1. Git 2.1.4 or later
+2. Docker 17.0 or later
 
 ## Build Image
 

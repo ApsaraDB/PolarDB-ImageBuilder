@@ -83,11 +83,8 @@ images:
 
 ## 安装依赖
 
-执行如下命令安装python：
-
-```bash
-sudo pip install -r requirements.txt
-```
+Git 2.1.4以上版本
+Docker 17.0以上版本
 
 
 ## 构建镜像
