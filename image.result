@@ -1,2 +1,3 @@
-polardb_pg/polardb_pg_opensource_engine_release:11beta2.20210910.d558886c.20211015154420
-polardb_pg/polardb_pg_opensource_manager:20211015154420.adff8ea8
+polardb_pg/polardb_pg_opensource_engine_test:11.9.20210910.59fcf529.20220121152612
+polardb_pg/polardb_pg_opensource_engine_release:11.9.20210910.59fcf529.20220121152612
+polardb_pg/polardb_pg_opensource_manager:20220121152612.700bf8db
