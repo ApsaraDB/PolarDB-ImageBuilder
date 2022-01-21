@@ -8,48 +8,55 @@ USER root
 
 ARG BUILD_ARGS="--disable-rpath \
     --with-segsize=128 \
+    --with-tclconfig=/usr/lib64 \
+    --with-openssl \
+    --with-libxml \
+    --with-system-tzdata=/usr/share/zoneinfo \
+    --with-perl \
+    --with-uuid=e2fs \
+    --enable-thread-safety \
+    --with-readline \
+    --with-python \
+    --with-tcl \
+    --with-pam \
+    --with-gssapi \
+    --enable-nls \
+    --with-libxslt \
+    --with-ldap \
+    --with-llvm \
+    --enable-polar-px \
+    --with-includes=/usr/local/openssl/include \
     --enable-cassert \
     --enable-debug \
-    --enable-tap-tests \
-    --with-pfsd "
+    --enable-inject-faults"
 
-ARG PFSRPM=
-
-COPY rootfs/t-pfsd-opensource-1.2.41-1.el7.x86_64.rpm /tmp/
-RUN rpm -ivh /tmp/t-pfsd-opensource-1.2.41-1.el7.x86_64.rpm
-
-#RUN yum install -y $PFSRPM && \
-    #yum clean all
+ARG DEV_PKG=
 
 COPY ${POLAR_SOURCE_DIR} ${POLAR_BUILD_DIR}
 
 RUN cd ${POLAR_BUILD_DIR} && \
-    export CFLAGS="-ggdb -O0 -g3 -fno-omit-frame-pointer  -g -I/usr/include/et -DLINUX_OOM_SCORE_ADJ=0 -DLINUX_OOM_ADJ=0 -DMAP_HUGETLB=0x40000 -pipe -Wall -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic" && \
-    export CXXFLAGS="-ggdb -O0 -g3 -fno-omit-frame-pointer  -g -I/usr/include/et  -pipe -Wall -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic" && \
-    export LDFLAGS="-Wl,-rpath,'\$\$ORIGIN/../lib'" && \
+    source /etc/bashrc && \
+    source /root/.bashrc && \
+    export CFLAGS="-Wall -Wmissing-prototypes -Wpointer-arith -Wdeclaration-after-statement -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -fexcess-precision=standard -Wno-format-truncation -Wno-stringop-truncation -g -ggdb   -ggdb -O0 -g3 -fno-omit-frame-pointer  -g -I/usr/include/et -DLINUX_OOM_SCORE_ADJ=0 -DLINUX_OOM_ADJ=0 -DMAP_HUGETLB=0x40000 -pipe -Wall -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic   -m64 " && \
+    export CXXFLAGS="-Wall -Wpointer-arith -Wendif-labels -Wmissing-format-attribute -Wformat-security -fno-strict-aliasing -fwrapv -g3 -ggdb -g   -ggdb -O0 -g3 -fno-omit-frame-pointer  -g -I/usr/include/et  -pipe -Wall -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic   -m64" && \
+    export LDFLAGS=" -Wl,-rpath,'\$\$ORIGIN/../lib'" && \
+    export OPENSSL_ROOT_DIR=/usr/local/openssl && \
+    export OPENSSL_LIBRARIES=/usr/local/openssl/lib/ && \
+    export LANG=en_US.UTF-8 && \
+    export LD_LIBRARY_PATH=${POLAR_BUILD_DIR}/cache/lib:$LD_LIBRARY_PATH && \
+    export PATH=${POLAR_BUILD_DIR}/cache/bin:$PATH && \
     ./configure --prefix=${POLAR_BUILD_DIR}/cache --with-pgport=5432 ${BUILD_ARGS} && \
     if [[ -d ${POLAR_BUILD_DIR}/cache/bin ]]; then make clean; fi && \
+    cd src/backend/polar_dma/libconsensus/polar_wrapper && \
+    bash ./build.sh -r -c ON -t debug && \
+    cd ${POLAR_BUILD_DIR} && \
     make -j 64 install && \
     make -j 64 -C contrib install && \
     make -j 64 -C external install
 
-#
-# Copyright (c) 2021, Alibaba Group Holding Limited
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#
-
-# build real image
+ARG POLAR_SOURCE_DIR=polardb_pg
 FROM polardb_pg/polardb_pg_base:1.0-SNAPSHOT
 
-LABEL maintainer="polardb@alibaba-inc.com"
 
 ARG CodeSource=
 ARG CodeBranch=
@@ -58,7 +65,6 @@ ARG PolarSource=
 ARG PolarBranch=
 ARG PolarVersion=
 ARG BuildBy=
-ARG PFSRPM=
 
 USER root
 
@@ -71,20 +77,20 @@ ENTRYPOINT ["python", "/docker_script/pg_tasks/supervisor.py"]
 CMD ["su", "-l", "${INITDB_USER}", "-c", "\"/u01/polardb_pg/bin/postgres -D /data\""]
 
 COPY --from=builder /home/postgres/polardb_pg/cache/ ${POLARDB_BASE_DIR}
+COPY --from=builder /usr/local/openssl /usr/local/openssl
 
 COPY rootfs/polardb_docker_script /docker_script
 COPY rootfs/postgresql.conf.sample.polardb_pg /postgresql.conf.demo
-COPY rootfs/t-pfsd-opensource-1.2.41-1.el7.x86_64.rpm /tmp/
 COPY rootfs/recovery.conf.demo /
 COPY docker/init.sh /init.sh
 COPY rootfs/bin/shutdown_cleanup.sh /shutdown_cleanup.sh
 
 RUN chmod -R +x /docker_script && \
     chmod 666 /postgresql.conf.demo && cat /init.sh >> /etc/bashrc && \
-    #yum install -y $PFSRPM && \
+    cp /usr/local/openssl/lib/libcrypto.so.1.1 /usr/lib64/ && cp /usr/local/openssl/lib/libssl.so.1.1 /usr/lib64/ && \
+    ln -sf /usr/lib64/libcrypto.so.1.1 /usr/lib64/libcrypto.so && ln -sf /usr/lib64/libssl.so.1.1 /usr/lib64/libssl.so && \
     yum clean all
-
-RUN rpm -ivh /tmp/t-pfsd-opensource-1.2.41-1.el7.x86_64.rpm
 
 LABEL CodeSource=$CodeSource CodeBranch=$CodeBranch CodeVersion=$CodeVersion \
     PolarSource=$PolarSource PolarBranch=$PolarBranch PolarVersion=$PolarVersion BuildBy=$BuildBy
+

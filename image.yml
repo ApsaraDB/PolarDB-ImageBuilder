@@ -24,18 +24,18 @@ images:
     type: engine
     build_image_name: polardb_pg/polardb_pg_opensource_engine_test
     build_image_dockerfile: ./docker/Dockerfile.pg.engine.test
-    engine_repo: https://github.com/ApsaraDB/PolarDB-for-PostgreSQL.git
-    engine_branch: main
+    engine_repo: git@github.com:ApsaraDB/PolarDB-for-PostgreSQL.git
+    engine_branch: POLARDB_11_STABLE
     engine_config_template: src/backend/utils/misc/postgresql.conf.sample
     push: false
-    enable: false
+    enable: true
 
   - id: polardb_pg_engine_release
     type: engine
     build_image_name: polardb_pg/polardb_pg_opensource_engine_release
     build_image_dockerfile: ./docker/Dockerfile.pg.engine.release
-    engine_repo: https://github.com/ApsaraDB/PolarDB-for-PostgreSQL.git
-    engine_branch: main
+    engine_repo: git@github.com:ApsaraDB/PolarDB-for-PostgreSQL.git
+    engine_branch: POLARDB_11_STABLE
     engine_config_template: src/backend/utils/misc/postgresql.conf.sample
     push: false
     enable: true
