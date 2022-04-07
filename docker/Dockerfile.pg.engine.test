@@ -39,6 +39,8 @@ ARG BUILD_ARGS="--disable-rpath \
     --with-ldap \
     --with-llvm \
     --enable-polar-px \
+    --with-pfsd \
+    --with-dma \
     --with-includes=/usr/local/openssl/include \
     --enable-cassert \
     --enable-debug \
@@ -61,8 +63,6 @@ RUN cd ${POLAR_BUILD_DIR} && \
     export PATH=${POLAR_BUILD_DIR}/cache/bin:$PATH && \
     ./configure --prefix=${POLAR_BUILD_DIR}/cache --with-pgport=5432 ${BUILD_ARGS} && \
     if [[ -d ${POLAR_BUILD_DIR}/cache/bin ]]; then make clean; fi && \
-    cd src/backend/polar_dma/libconsensus/polar_wrapper && \
-    bash ./build.sh -r -c ON -t debug && \
     cd ${POLAR_BUILD_DIR} && \
     make -j 64 install && \
     make -j 64 -C contrib install && \
